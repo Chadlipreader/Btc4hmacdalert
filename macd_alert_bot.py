@@ -1,9 +1,16 @@
 """
 MACD bullish-cross + first-green-close signal bot.
 
-Checks one or more Binance symbols on the 4h timeframe. Fires a Telegram
-alert the first time a MACD bullish crossover is confirmed by the first
-green candle close afterward (same logic as the scanner artifact).
+Checks one or more symbols (e.g. BTCUSDT, ETHUSDT) on the 4h timeframe.
+Fires a Telegram alert the first time a MACD bullish crossover is
+confirmed by the first green candle close afterward (same logic as the
+scanner artifact).
+
+Candle data comes from CryptoCompare's free public API rather than an
+exchange directly, because exchanges like Binance block API requests
+from GitHub Actions' US-based runners for regulatory reasons -
+CryptoCompare aggregates market data and isn't a regulated exchange, so
+it isn't geo-restricted the same way.
 
 State is stored in state.json so the same signal never alerts twice, even
 if this script runs every 15 minutes.
@@ -14,8 +21,20 @@ import json
 import time
 import requests
 
-BINANCE_URL = "https://api.binance.com/api/v3/klines"
+CRYPTOCOMPARE_URL = "https://min-api.cryptocompare.com/data/v2/histohour"
 STATE_FILE = "state.json"
+
+# Quote assets checked longest-first so e.g. "USDT" matches before "T" would.
+KNOWN_QUOTES = ["USDT", "USDC", "BUSD", "FDUSD", "BTC", "ETH", "EUR", "GBP"]
+
+
+def split_symbol(symbol):
+    """'BTCUSDT' -> ('BTC', 'USDT'). Falls back to a USDT quote if no
+    known suffix matches."""
+    for q in KNOWN_QUOTES:
+        if symbol.endswith(q) and len(symbol) > len(q):
+            return symbol[: -len(q)], q
+    return symbol, "USDT"
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
@@ -63,15 +82,24 @@ def detect_signals(candles, macd_line, signal_line):
 
 
 def fetch_candles(symbol):
-    resp = requests.get(BINANCE_URL, params={"symbol": symbol, "interval": "4h", "limit": 300}, timeout=15)
-    data = resp.json()
-    if not isinstance(data, list):
-        raise RuntimeError(data.get("msg", "Unknown Binance error"))
-    now_ms = int(time.time() * 1000)
+    base, quote = split_symbol(symbol)
+    resp = requests.get(
+        CRYPTOCOMPARE_URL,
+        params={"fsym": base, "tsym": quote, "aggregate": 4, "limit": 300},
+        timeout=15,
+    )
+    payload = resp.json()
+    if payload.get("Response") != "Success":
+        raise RuntimeError(payload.get("Message", "Unknown CryptoCompare error"))
+
+    rows = payload["Data"]["Data"]
+    now_s = time.time()
+    bar_seconds = 4 * 3600
     candles = [
-        {"time": row[0], "open": float(row[1]), "high": float(row[2]),
-         "low": float(row[3]), "close": float(row[4])}
-        for row in data if row[6] <= now_ms
+        {"time": row["time"] * 1000, "open": float(row["open"]), "high": float(row["high"]),
+         "low": float(row["low"]), "close": float(row["close"])}
+        for row in rows
+        if row["time"] + bar_seconds <= now_s and (row["open"] or row["close"])
     ]
     return candles
 
