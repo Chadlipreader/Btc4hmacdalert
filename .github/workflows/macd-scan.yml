@@ -25,6 +25,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CRYPTOCOMPARE_API_KEY: ${{ secrets.CRYPTOCOMPARE_API_KEY }}
           SYMBOLS: ${{ vars.SYMBOLS }}
           ALERT_ON_CROSS: ${{ vars.ALERT_ON_CROSS }}
         run: python macd_alert_bot.py
