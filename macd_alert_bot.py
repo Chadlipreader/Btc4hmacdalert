@@ -88,9 +88,16 @@ def fetch_candles(symbol):
         params={"fsym": base, "tsym": quote, "aggregate": 4, "limit": 300},
         timeout=15,
     )
-    payload = resp.json()
+    try:
+        payload = resp.json()
+    except ValueError:
+        raise RuntimeError(f"HTTP {resp.status_code}, non-JSON response: {resp.text[:200]}")
+
     if payload.get("Response") != "Success":
-        raise RuntimeError(payload.get("Message", "Unknown CryptoCompare error"))
+        # Surface whatever the API actually sent back so failures are diagnosable,
+        # since CryptoCompare's error envelope has changed shape before.
+        detail = payload.get("Message") or payload.get("Err") or payload
+        raise RuntimeError(f"HTTP {resp.status_code}: {str(detail)[:200]}")
 
     rows = payload["Data"]["Data"]
     now_s = time.time()
