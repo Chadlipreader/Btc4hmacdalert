@@ -22,6 +22,7 @@ import time
 import requests
 
 CRYPTOCOMPARE_URL = "https://min-api.cryptocompare.com/data/v2/histohour"
+CRYPTOCOMPARE_API_KEY = os.environ.get("CRYPTOCOMPARE_API_KEY", "")
 STATE_FILE = "state.json"
 
 # Quote assets checked longest-first so e.g. "USDT" matches before "T" would.
@@ -83,9 +84,11 @@ def detect_signals(candles, macd_line, signal_line):
 
 def fetch_candles(symbol):
     base, quote = split_symbol(symbol)
+    headers = {"authorization": f"Apikey {CRYPTOCOMPARE_API_KEY}"} if CRYPTOCOMPARE_API_KEY else {}
     resp = requests.get(
         CRYPTOCOMPARE_URL,
         params={"fsym": base, "tsym": quote, "aggregate": 4, "limit": 300},
+        headers=headers,
         timeout=15,
     )
     try:
