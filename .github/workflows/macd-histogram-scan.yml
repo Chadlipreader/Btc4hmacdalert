@@ -2,7 +2,7 @@ name: MACD Histogram Scan
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "3 0,4,8,12,16,20 * * *"   # 3 minutes after each 4h candle closes (UTC)
   workflow_dispatch: {}
 
 permissions:
