@@ -15,9 +15,12 @@ No trend filter, no candle-color confirmation, no "does MACD hold"
 requirement - this is the rawest, fastest, and noisiest version of the
 strategy. Expect more signals and more false ones than the other bot.
 
-Candle data comes from CryptoCompare's API (needs a free API key - see
-CRYPTOCOMPARE_API_KEY below), since exchanges like Binance block API
-requests from GitHub Actions' US-based runners.
+Candle data comes from Kraken's public API - no API key needed, and no
+account-level call quota to run into. Kraken is a US-licensed exchange
+so it doesn't block requests from GitHub Actions' US-based runners the
+way Binance does. Tradeoff: Kraken lists fewer tokens than Binance, so a
+very new or small-cap symbol may not be found there - if that happens
+the bot reports it clearly per-symbol instead of failing the whole run.
 
 Uses its own state file (state_histogram.json) so it doesn't collide
 with the other bot's state.json if both run in the same repo.
@@ -28,18 +31,31 @@ import json
 import time
 import requests
 
-CRYPTOCOMPARE_URL = "https://min-api.cryptocompare.com/data/v2/histohour"
-CRYPTOCOMPARE_API_KEY = os.environ.get("CRYPTOCOMPARE_API_KEY", "")
+KRAKEN_URL = "https://api.kraken.com/0/public/OHLC"
 STATE_FILE = "state_histogram.json"
 
-KNOWN_QUOTES = ["USDT", "USDC", "BUSD", "FDUSD", "BTC", "ETH", "EUR", "GBP"]
+# Kraken uses its own asset codes for a few legacy coins.
+KRAKEN_BASE_ALIASES = {"BTC": "XBT"}
 
 
-def split_symbol(symbol):
-    for q in KNOWN_QUOTES:
+def kraken_pair_candidates(symbol):
+    """Given e.g. 'BTCUSDT', yield pair strings to try on Kraken, in order:
+    the symbol as-is, then with BTC->XBT applied, then falling back to a
+    USD quote instead of USDT (Kraken doesn't list USDT pairs for everything)."""
+    quotes = ["USDT", "USDC", "USD", "EUR", "GBP", "BTC", "ETH"]
+    base, quote = symbol, "USDT"
+    for q in quotes:
         if symbol.endswith(q) and len(symbol) > len(q):
-            return symbol[: -len(q)], q
-    return symbol, "USDT"
+            base, quote = symbol[: -len(q)], q
+            break
+
+    seen = set()
+    for b in (base, KRAKEN_BASE_ALIASES.get(base, base)):
+        for q in ([quote, "USD"] if quote != "USD" else [quote]):
+            pair = f"{b}{q}"
+            if pair not in seen:
+                seen.add(pair)
+                yield pair
 
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -80,33 +96,40 @@ def detect_histogram_flips(candles, hist):
 
 
 def fetch_candles(symbol):
-    base, quote = split_symbol(symbol)
-    headers = {"authorization": f"Apikey {CRYPTOCOMPARE_API_KEY}"} if CRYPTOCOMPARE_API_KEY else {}
-    resp = requests.get(
-        CRYPTOCOMPARE_URL,
-        params={"fsym": base, "tsym": quote, "aggregate": 4, "limit": 300},
-        headers=headers,
-        timeout=15,
-    )
-    try:
-        payload = resp.json()
-    except ValueError:
-        raise RuntimeError(f"HTTP {resp.status_code}, non-JSON response: {resp.text[:200]}")
+    last_error = None
+    for pair in kraken_pair_candidates(symbol):
+        resp = requests.get(KRAKEN_URL, params={"pair": pair, "interval": 240}, timeout=15)
+        try:
+            payload = resp.json()
+        except ValueError:
+            last_error = f"HTTP {resp.status_code}, non-JSON response for pair {pair}"
+            continue
 
-    if payload.get("Response") != "Success":
-        detail = payload.get("Message") or payload.get("Err") or payload
-        raise RuntimeError(f"HTTP {resp.status_code}: {str(detail)[:200]}")
+        if payload.get("error"):
+            last_error = f"pair {pair}: {payload['error']}"
+            continue
 
-    rows = payload["Data"]["Data"]
-    now_s = time.time()
-    bar_seconds = 4 * 3600
-    candles = [
-        {"time": row["time"] * 1000, "open": float(row["open"]), "high": float(row["high"]),
-         "low": float(row["low"]), "close": float(row["close"])}
-        for row in rows
-        if row["time"] + bar_seconds <= now_s and (row["open"] or row["close"])
-    ]
-    return candles
+        result = payload.get("result", {})
+        rows = None
+        for key, val in result.items():
+            if key != "last":
+                rows = val
+                break
+        if not rows:
+            last_error = f"pair {pair}: no data returned"
+            continue
+
+        now_s = time.time()
+        bar_seconds = 4 * 3600
+        candles = [
+            {"time": row[0] * 1000, "open": float(row[1]), "high": float(row[2]),
+             "low": float(row[3]), "close": float(row[4])}
+            for row in rows
+            if row[0] + bar_seconds <= now_s
+        ]
+        return candles
+
+    raise RuntimeError(f"no Kraken pair worked for {symbol} - {last_error}")
 
 
 def send_telegram(text):
@@ -138,6 +161,7 @@ def main():
 
     for symbol in SYMBOLS:
         try:
+            time.sleep(1)  # small pacing gap so rapid-fire requests don't trip the free-tier rate limit
             candles = fetch_candles(symbol)
             if len(candles) < 40:
                 print(f"{symbol}: not enough history, skipping")
@@ -181,3 +205,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
