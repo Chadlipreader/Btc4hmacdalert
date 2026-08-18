@@ -10,5 +10,15 @@
   "HYPEUSDT:long_hist:last_time": 1786838400000,
   "HYPEUSDT:short_hist:last_time": 1786694400000,
   "INJUSDT:long_hist:last_time": 1786939200000,
-  "INJUSDT:short_hist:last_time": 1786680000000
+  "INJUSDT:short_hist:last_time": 1786680000000,
+  "BNBUSDT:long_hist:last_time": 1786449600000,
+  "BNBUSDT:short_hist:last_time": 1786579200000,
+  "JTOUSD:long_hist:last_time": 1786766400000,
+  "JTOUSD:short_hist:last_time": 1786982400000,
+  "PAXGUSD:long_hist:last_time": 1786924800000,
+  "PAXGUSD:short_hist:last_time": 1786204800000,
+  "XMRUSD:long_hist:last_time": 1786752000000,
+  "XMRUSD:short_hist:last_time": 1786968000000,
+  "WLDUSD:long_hist:last_time": 1786795200000,
+  "WLDUSD:short_hist:last_time": 1786982400000
 }
