@@ -1,14 +1,14 @@
 {
-  "BTCUSDT:long_hist:last_time": 1789977600000,
-  "BTCUSDT:short_hist:last_time": 1790150400000,
+  "BTCUSDT:long_hist:last_time": 1790496000000,
+  "BTCUSDT:short_hist:last_time": 1790510400000,
   "ETHUSDT:long_hist:last_time": 1790481600000,
-  "ETHUSDT:short_hist:last_time": 1790107200000,
+  "ETHUSDT:short_hist:last_time": 1790510400000,
   "SOLUSDT:long_hist:last_time": 1790481600000,
   "SOLUSDT:short_hist:last_time": 1790467200000,
   "LINKUSDT:long_hist:last_time": 1790280000000,
-  "LINKUSDT:short_hist:last_time": 1790092800000,
+  "LINKUSDT:short_hist:last_time": 1790510400000,
   "HYPEUSDT:long_hist:last_time": 1790481600000,
-  "HYPEUSDT:short_hist:last_time": 1789876800000,
+  "HYPEUSDT:short_hist:last_time": 1790510400000,
   "INJUSDT:long_hist:last_time": 1786939200000,
   "INJUSDT:short_hist:last_time": 1786680000000,
   "BNBUSDT:long_hist:last_time": 1789948800000,
@@ -18,7 +18,7 @@
   "PAXGUSD:long_hist:last_time": 1790323200000,
   "PAXGUSD:short_hist:last_time": 1789876800000,
   "XMRUSD:long_hist:last_time": 1790481600000,
-  "XMRUSD:short_hist:last_time": 1790337600000,
+  "XMRUSD:short_hist:last_time": 1790496000000,
   "WLDUSD:long_hist:last_time": 1790323200000,
   "WLDUSD:short_hist:last_time": 1790136000000
 }
