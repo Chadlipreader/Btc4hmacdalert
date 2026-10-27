@@ -1,7 +1,7 @@
 {
   "BTCUSDT:long_hist:last_time": 1793016000000,
   "BTCUSDT:short_hist:last_time": 1792656000000,
-  "ETHUSDT:long_hist:last_time": 1792368000000,
+  "ETHUSDT:long_hist:last_time": 1793044800000,
   "ETHUSDT:short_hist:last_time": 1792656000000,
   "SOLUSDT:long_hist:last_time": 1793001600000,
   "SOLUSDT:short_hist:last_time": 1792641600000,
@@ -19,6 +19,6 @@
   "PAXGUSD:short_hist:last_time": 1792627200000,
   "XMRUSD:long_hist:last_time": 1792886400000,
   "XMRUSD:short_hist:last_time": 1792944000000,
-  "WLDUSD:long_hist:last_time": 1792382400000,
+  "WLDUSD:long_hist:last_time": 1793044800000,
   "WLDUSD:short_hist:last_time": 1792641600000
 }
